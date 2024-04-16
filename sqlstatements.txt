@@ -1,0 +1,18 @@
+
+//Create table
+CREATE TABLE "books" (
+	"bookID"	INTEGER,
+	"title"	TEXT,
+	"authors"	TEXT,
+	"average_rating"	REAL,
+	"isbn"	TEXT,
+	"isbn13"	REAL,
+	"language_code"	TEXT,
+	"num_pages"	INTEGER,
+	"ratings_count"	INTEGER,
+	"text_reviews_count"	INTEGER,
+	"publication_date"	DATE,
+	"publisher"	TEXT,
+	PRIMARY KEY("isbn13"),
+	UNIQUE("bookID","isbn","isbn13")
+)
