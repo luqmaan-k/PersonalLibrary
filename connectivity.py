@@ -1,4 +1,4 @@
-import streamlit as st
+#import streamlit as st
 import sqlite3 as sql
 from PIL import Image
 import pandas as pd
@@ -52,8 +52,6 @@ def setup():
     conn = sql.connect("library.db",check_same_thread=False)
      
     if conn is not None:
-        # Create the table
-        cursor = conn.cursor()
         
         create_books_table(conn)
 
@@ -61,22 +59,11 @@ def setup():
         #insert_books(conn,books_csv_file)
 
         # Close the connection
-        conn.close()
+        return conn
     else:
         print("Error! Cannot create the database connection.")
-    print("Setup done")
-    
-if __name__ == '__main__':
-    setup()
-    menu = ["Home", "Test"]
-    choice = st.sidebar.selectbox('Menu',menu)
-    if choice == "Home":
-        st.write("""
-                    # My first app
-                    Hello *world!*
-                    """)
-
-    elif choice == "Test":
-        st.write("""
-                    # Test
-                    """)   
+        
+def connect():
+    database = "library.db"
+    conn = sql.connect("library.db",check_same_thread=False)
+    return conn
