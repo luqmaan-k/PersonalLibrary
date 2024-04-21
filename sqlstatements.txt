@@ -1,18 +1,65 @@
 
 //Create table
-CREATE TABLE "books" (
-	"bookID"	INTEGER,
-	"title"	TEXT,
-	"authors"	TEXT,
-	"average_rating"	REAL,
-	"isbn"	TEXT,
-	"isbn13"	REAL,
-	"language_code"	TEXT,
-	"num_pages"	INTEGER,
-	"ratings_count"	INTEGER,
-	"text_reviews_count"	INTEGER,
-	"publication_date"	DATE,
-	"publisher"	TEXT,
-	PRIMARY KEY("isbn13"),
-	UNIQUE("bookID","isbn","isbn13")
-)
+
+CREATE TABLE IF NOT EXISTS books (
+    isbn13 REAL PRIMARY KEY,
+	average_rating REAL,
+	title TEXT,
+	num_pages INTEGER,
+	language_code VARCHAR,
+	ratings_count INTEGER
+);
+
+INSERT INTO books (isbn13,average_rating,title,num_pages,language_code,ratings_count)
+SELECT b.isbn13,b.average_rating,b.title,b.num_pages,b.language_code,b.ratings_count
+FROM booksdata b;
+
+CREATE TABLE IF NOT EXISTS author (
+    author_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    author_name TEXT UNIQUE
+);
+
+INSERT OR IGNORE INTO author (author_name)
+SELECT DISTINCT authors
+FROM booksdata;
+
+CREATE TABLE IF NOT EXISTS publisher (
+    publisher_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    publisher_name TEXT UNIQUE
+);
+
+INSERT OR IGNORE INTO publisher (publisher_name)
+SELECT DISTINCT publishers
+FROM booksdata;
+
+CREATE TABLE IF NOT EXISTS Authoredby (
+    isbn13 REAL,
+    author_id INTEGER,
+    FOREIGN KEY (isbn13) REFERENCES books(isbn13),
+    FOREIGN KEY (author_id) REFERENCES author(author_id)
+);
+
+INSERT INTO Authoredby (isbn13, author_id)
+SELECT b.isbn13, a.author_id
+FROM booksdata b
+JOIN author a ON b.authors = a.author_name;
+
+CREATE TABLE IF NOT EXISTS publishedby (
+    isbn13 REAL,
+    publisher_id INTEGER,
+    FOREIGN KEY (isbn13) REFERENCES books(isbn13),
+    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id)
+);
+
+INSERT INTO publishedby (isbn13, publisher_id)
+SELECT b.isbn13, a.publisher_id
+FROM booksdata b
+JOIN publisher a ON b.publisher = a.publisher_name;
+
+CREATE TABLE IF NOT EXISTS user (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT
+);
+
+INSERT INTO user (username, password) VALUES ('joe', 'joe')

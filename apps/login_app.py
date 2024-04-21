@@ -95,7 +95,7 @@ class LoginApp(HydraHeadApp):
 
     def _check_login(self, login_data) -> int:
         #this method returns a value indicating the success of verifying the login details provided and the permission level, 1 for default access, 0 no access etc.
-
+        
         if login_data['username'] == 'joe' and login_data['password'] == 'joe':
             return 1
         else:

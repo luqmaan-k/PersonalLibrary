@@ -3,7 +3,7 @@ import hydralit_components as hc
 import apps
 import streamlit as st
 
-st.set_page_config(page_title='Secure Hydralit Data Explorer',
+st.set_page_config(page_title='Personal Library',
                    page_icon="📚",
                    layout='wide',
                    initial_sidebar_state='auto',)
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     over_theme = {'txc_inactive': '#FFFFFF'}
     #this is the host application, we add children to it and that's it!
     app = HydraApp(
-        title='Secure Hydralit Data Explorer',
+        title='Personal Library',
         favicon="📚",
         hide_streamlit_markers=hide_st,
         #add a nice banner, this banner has been defined as 5 sections with spacing defined by the banner_spacing array below.
