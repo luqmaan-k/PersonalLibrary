@@ -4,7 +4,31 @@ from typing import Dict
 import streamlit as st
 from hydralit import HydraHeadApp
 
+import sqlite3 as sql
+from PIL import Image
+import pandas as pd
+import csv
 
+def set_user(username,password):
+    database = "library.db"
+
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+     
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO user (username, password) VALUES (?, ?)",(username,password))
+            conn.commit()
+            conn.close()
+            return True
+        except sql.IntegrityError as e:
+            print("Failed to insert user")
+            conn.close()
+    else:
+        print("Error! Cannot create the database connection.")
+        return False
+        
 class SignUpApp(HydraHeadApp):
     """
     This is an example signup application to be used to secure access within a HydraApp streamlit application.
@@ -87,15 +111,17 @@ class SignUpApp(HydraHeadApp):
             st.error('Passwords do not match, please try again.')
         else:
             with st.spinner("🤓 now redirecting to login...."):
-                self._save_signup(form_data)
-                time.sleep(2)
+                if self._save_signup(form_data) :
+                    time.sleep(2)
 
-                #access control uses an int value to allow for levels of permission that can be set for each user, this can then be checked within each app seperately.
-                self.set_access(0, None)
+                    #access control uses an int value to allow for levels of permission that can be set for each user, this can then be checked within each app seperately.
+                    self.set_access(0, None)
 
-                #Do the kick back to the login screen
-                self.do_redirect()
+                    #Do the kick back to the login screen
+                    self.do_redirect()
 
+                else : 
+                    st.error("User Name not allowed or already taken.Please try again")
     def _save_signup(self, signup_data):
         #get the user details from the form and save somehwere
 
@@ -103,12 +129,5 @@ class SignUpApp(HydraHeadApp):
         # this is the data submitted
 
         #just show the data we captured
-        what_we_got = f"""
-        captured signup details: \n
-        username: {signup_data['username']} \n
-        password: {signup_data['password']} \n
-        access level: {signup_data['access_level']} \n
-        """
-
-        st.write(what_we_got)
+        return set_user(signup_data['username'],signup_data['password'])
 

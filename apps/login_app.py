@@ -3,7 +3,29 @@ from typing import Dict
 import streamlit as st
 from hydralit import HydraHeadApp
 
+import sqlite3 as sql
+from PIL import Image
+import pandas as pd
+import csv
 
+def get_user(username):
+    database = "library.db"
+    books_csv_file = "books.csv"
+
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+     
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, password FROM user WHERE username = ?", (username,))
+        user_data = cursor.fetchone()
+        conn.close()
+        return user_data
+        
+    else:
+        print("Error! Cannot create the database connection.")
+        return None
+        
 class LoginApp(HydraHeadApp):
     """
     This is an example login application to be used to secure access within a HydraApp streamlit application.
@@ -24,8 +46,6 @@ class LoginApp(HydraHeadApp):
         st.markdown("<h1 style='text-align: center;'>Login</h1>", unsafe_allow_html=True)
 
         c1,c2,c3, = st.columns([2,2,2])
-        # c3.image("./resources/lock.png",width=100,)
-        # c3.image("./resources/hydra.png",width=100,)
         
         form_data = self._create_login_form(c2)
         
@@ -74,9 +94,9 @@ class LoginApp(HydraHeadApp):
     def _do_login(self, form_data, msg_container) -> None:
 
         #access_level=0 Access denied!
-        access_level = self._check_login(form_data)
+        user_id,access_level = self._check_login(form_data)
 
-        if access_level > 0:
+        if access_level :
             msg_container.success(f"✔️ Login success")
             with st.spinner("🤓 now redirecting to application...."):
                 time.sleep(1)
@@ -95,8 +115,16 @@ class LoginApp(HydraHeadApp):
 
     def _check_login(self, login_data) -> int:
         #this method returns a value indicating the success of verifying the login details provided and the permission level, 1 for default access, 0 no access etc.
-        
-        if login_data['username'] == 'joe' and login_data['password'] == 'joe':
-            return 1
+            # Connect to the SQLite database
+        conn = sql.connect('library.db')
+        cursor = conn.cursor()
+        # Query the database for the user
+        user_data = get_user(login_data['username'])
+        # Close the database connection
+        conn.close()
+
+        # Check if user exists and password matches
+        if user_data and user_data[1] == login_data['password']:
+            return True, user_data[0]  # Return True and user_id
         else:
-            return 0
+            return False, None

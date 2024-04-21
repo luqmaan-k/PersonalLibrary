@@ -63,3 +63,28 @@ CREATE TABLE IF NOT EXISTS user (
 );
 
 INSERT INTO user (username, password) VALUES ('joe', 'joe')
+
+CREATE TABLE IF NOT EXISTS status (
+    user_id INTEGER,
+    isbn13 REAL,
+	status TEXT,
+    current_page INTEGER,
+    rating INTEGER,
+    notes TEXT,
+    PRIMARY KEY (user_id, isbn13),
+    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    FOREIGN KEY (isbn13) REFERENCES books(isbn13)
+);
+
+INSERT INTO status(user_id,isbn13,status,current_page,rating,notes) VALUES(1,9780439785969.0,'R',70,9,NULL);
+
+create table imagedata(
+	isbn13 REAL,
+	Image_L TEXT,
+	Image_M TEXT,
+	Image_S TEXT,
+	FOREIGN KEY(isbn13) REFERENCES books(isbn13)
+);
+
+INSERT OR IGNORE INTO imagedata
+select bd.isbn13,"Image-URL-L","Image-URL-M","Image-URL-S" from bookswithimage bi inner join booksdata bd on bi.isbn = bd.isbn;

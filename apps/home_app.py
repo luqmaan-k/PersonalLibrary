@@ -19,6 +19,7 @@ def get_all_books():
      
     if conn is not None:
         cursor = conn.cursor()
+
         cursor.execute('SELECT "Image-URL-M",title,average_rating FROM booksdata INNER JOIN bookswithimage ON bookswithimage.ISBN = booksdata.isbn WHERE ratings_count > 1000 ORDER BY average_rating DESC LIMIT 10')
         book_data = cursor.fetchall()
         conn.close()
@@ -32,14 +33,6 @@ def get_all_books():
     else:
         print("Error! Cannot create the database connection.")
         return None
-
-def path_to_image_html(path):
-    return '<img src="' + path + '" width="200" >'
-
-@st.cache_data
-def convert_df(input_df):
-     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-     return input_df.to_html(escape=False, formatters=dict(Cover=path_to_image_html))
                  
 class HomeApp(HydraHeadApp):
 
@@ -69,17 +62,17 @@ class HomeApp(HydraHeadApp):
             
             # st.markdown(book_clean_df.to_html(escape=False), unsafe_allow_html=True)
 
-            book_clean_df.index += 1
-            html = convert_df(book_clean_df)
-
-            # st.column_config.ImageColumn(label=None, *, width=None, help=None)
-            print(book_clean_df)
-
-
-            st.markdown(
-                html,
-                unsafe_allow_html=True
-            )
+            columns = st.columns((1, 3, 8, 2))
+            
+            fields =["Rank","Cover", "Title", "Rating"]
+            for col, field_name in zip(columns, fields):
+                col.write(field_name)
+            for i in book_clean_df.index :
+                col1, col2, col3,col4 = st.columns((1, 3, 8, 2))
+                col1.write(str(i+1))
+                col2.image(book_clean_df["Cover"][i],width = 200)
+                col3.write(book_clean_df["Title"][i])
+                col4.write(str(book_clean_df["Rating"][i]))
             
             # print(html)
             

@@ -8,77 +8,138 @@ from PIL import Image
 import pandas as pd
 import csv
 
-def getreading():
+def get_book_details(isbn13):
     database = "library.db"
-    books_csv_file = "books.csv"
 
     # Create a connection to the database
     conn = sql.connect("library.db",check_same_thread=False)
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute('SELECT "Image-URL-L",title,average_rating FROM booksdata INNER JOIN bookswithimage ON bookswithimage.ISBN = booksdata.isbn WHERE ratings_count > 1000 ORDER BY average_rating DESC LIMIT 10')
+        cursor.execute(f"SELECT b.*,Image_L,a.author_name,p.publisher_name FROM books b INNER JOIN imagedata i on i.isbn13 = b.isbn13  INNER JOIN Authoredby ab on b.isbn13 = ab.isbn13 INNER JOIN author a on a.author_id = ab.author_id INNER JOIN publishedby pb on pb.isbn13 = b.isbn13 INNER JOIN publisher p on p.publisher_id = pb.publisher_id where b.isbn13 = {isbn13};")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
-
-        # Insert data from CSV file
-        #insert_books(conn,books_csv_file)
-
         # Close the connection
         
     else:
         print("Error! Cannot create the database connection.")
         return None
-    
-def getCompleted():
+        
+def get_status(username):
     database = "library.db"
-    books_csv_file = "books.csv"
 
     # Create a connection to the database
     conn = sql.connect("library.db",check_same_thread=False)
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute('SELECT "Image-URL-L",title,average_rating FROM booksdata INNER JOIN bookswithimage ON bookswithimage.ISBN = booksdata.isbn WHERE ratings_count > 1000 ORDER BY average_rating DESC LIMIT 10')
+        cursor.execute(f"SELECT s.* FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}');")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
-
-        # Insert data from CSV file
-        #insert_books(conn,books_csv_file)
-
         # Close the connection
         
     else:
         print("Error! Cannot create the database connection.")
         return None
-        
-def getPlanning():
+
+def get_status_all(username):
     database = "library.db"
-    books_csv_file = "books.csv"
 
     # Create a connection to the database
     conn = sql.connect("library.db",check_same_thread=False)
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute('SELECT "Image-URL-L",title,average_rating FROM booksdata INNER JOIN bookswithimage ON bookswithimage.ISBN = booksdata.isbn WHERE ratings_count > 1000 ORDER BY average_rating DESC LIMIT 10')
+        cursor.execute(f"SELECT i.Image_L,b.title,s.status,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}');")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
-
-        # Insert data from CSV file
-        #insert_books(conn,books_csv_file)
-
         # Close the connection
         
     else:
         print("Error! Cannot create the database connection.")
         return None
         
-def path_to_image_html(path):
-    return '<img src="' + path + '" width="100" height="100">'
+def get_status_completed(username):
+    database = "library.db"
+
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+     
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT i.Image_L,b.title,s.rating,s.notes,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}') and s.status = 'C';")
+        book_data = cursor.fetchall()
+        conn.close()
+        return book_data
+        # Close the connection
+        
+    else:
+        print("Error! Cannot create the database connection.")
+        return None
+
+def get_status_reading(username):
+    database = "library.db"
+
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+     
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT i.Image_L,b.title,s.current_page || ' / ' || b.num_pages,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}' and s.status = 'R');")
+        book_data = cursor.fetchall()
+        conn.close()
+        return book_data
+        # Close the connection
+        
+    else:
+        print("Error! Cannot create the database connection.")
+        return None
+        
+def get_status_planning(username):
+    database = "library.db"
+
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+     
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT i.Image_L,b.title,s.notes,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}' and s.status = 'P');")
+        book_data = cursor.fetchall()
+        conn.close()
+        return book_data
+        # Close the connection
+        
+    else:
+        print("Error! Cannot create the database connection.")
+        return None
+
+def update_status(newform,isbn13):
+    print("New Form : ",newform)
+    st.session_state.formstate = False
+    st.session_state.clicked = False
+
+def editbookstatus(isbn13,placeholder):
+    book_details = get_book_details(isbn13)
+    with placeholder.container():
+        column1,column2 = st.columns((1,5))
+        column1.image(book_details[0][6],width = 200)
+        column2.header("Name : " + book_details[0][2] )
+        column2.subheader("Authored by : " + book_details[0][7])
+        column2.subheader("Published by : " + book_details[0][8])
+        column2.subheader("Rating : " + str(book_details[0][1]))
+        edit = st.form(key = "edit")
+        formstate = {}
+        formstate['status'] = edit.selectbox('Something?',('Reading','Completed','Planning'))
+        formstate['current_page'] = edit.slider('Number Of Pages Read',0,book_details[0][3],1) 
+        formstate['rating'] = edit.slider("Rating",0,10,1)
+        formstate['notes'] = edit.text_input("Notes")
+        if edit.form_submit_button('Update') :
+            st.session_state.formbutton = True
+        if st.session_state.formbutton : 
+            update_status(formstate,isbn13)
 
 @st.cache_data
 def convert_df(input_df):
@@ -91,28 +152,104 @@ class UserApp(HydraHeadApp):
         self.__dict__.update(kwargs)
         self.title = title
 
-
     def run(self) -> None:
         """
         Application entry point.
         """
-
-        st.write("# Welcome to your Personal Library 📚")
-        bookdata = getCompleted()
-        book_clean_df = pd.DataFrame(bookdata, columns=["Cover", "Title", "Rating"])
         
-        # st.markdown(book_clean_df.to_html(escape=False), unsafe_allow_html=True)
+        if 'clicked' not in st.session_state :
+            st.session_state.clicked = False
+        if 'formbutton' not in st.session_state :
+            st.session_state.formbutton = False
 
-        book_clean_df.index += 1
-        html = convert_df(book_clean_df)
-
-        # st.column_config.ImageColumn(label=None, *, width=None, help=None)
-        print(book_clean_df)
-
-
-        st.markdown(
-            html,
-            unsafe_allow_html=True
-        )
-        
-        print(html)
+        menu = ["All", "Reading","Completed","Planning"]
+        choice = st.sidebar.selectbox("Menu", menu)
+        placeholder = st.empty()
+        if choice == 'All' :
+            with placeholder.container():
+                st.title(f"Welcome to your Personal Library 📚 {self.session_state.current_user}")
+                bookdata = get_status_all(self.session_state.current_user)
+                book_clean_df = pd.DataFrame(bookdata, columns=["Cover", "Title", "Status","isbn13"])
+                columns = st.columns((1, 3, 6, 2,1))
+                fields =["Rank","Cover", "Title", "Status"]
+                for col, field_name in zip(columns, fields):
+                    col.write(field_name)
+                for i in book_clean_df.index :
+                    col1, col2, col3,col4,col5 = st.columns((1, 3, 6, 2,1))
+                    col1.write(str(i+1))
+                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    col3.write(book_clean_df["Title"][i])
+                    col4.write(str(book_clean_df["Status"][i]))
+                    if col5.button("Edit") : 
+                        st.session_state.clicked = True
+                    if st.session_state.clicked:
+                        placeholder.empty()
+                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                        
+            
+        elif choice == 'Reading' :
+            with placeholder.container():
+                st.title(f"Reading 📚")
+                bookdata = get_status_reading(self.session_state.current_user)
+                book_clean_df = pd.DataFrame(bookdata, columns=["Cover", "Title","Current Page","isbn13"])
+                columns = st.columns((1, 3, 6, 2,1))
+                fields =["Rank","Cover", "Title", "Current/Toal"]
+                for col, field_name in zip(columns, fields):
+                    col.write(field_name)
+                for i in book_clean_df.index :
+                    col1, col2, col3,col4,col5 = st.columns((1, 3, 6, 2,1))
+                    col1.write(str(i+1))
+                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    col3.write(book_clean_df["Title"][i])
+                    col4.write(str(book_clean_df["Current Page"][i]))
+                    if col5.button("Edit") : 
+                        st.session_state.clicked = True
+                    if st.session_state.clicked:
+                        placeholder.empty()
+                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                    
+        elif choice == 'Completed' :
+            with placeholder.container():
+                st.title(f"Completed ✔")
+                bookdata = get_status_completed(self.session_state.current_user)
+                book_clean_df = pd.DataFrame(bookdata, columns=["Cover", "Title", "Rating" ,"Note","isbn13"])
+                columns = st.columns((1, 3, 3, 2, 4, 1))
+                fields =["Rank","Cover", "Title", "Rating","Note"]
+                for col, field_name in zip(columns, fields):
+                    col.write(field_name)
+                for i in book_clean_df.index :
+                    col1, col2, col3,col4,col5,col6 = st.columns((1, 3, 3, 2, 4, 1))
+                    col1.write(str(i+1))
+                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    col3.write(book_clean_df["Title"][i])
+                    col4.write(str(book_clean_df["Rating"][i]))
+                    col5.write(book_clean_df["Note"][i])
+                    if col6.button("Edit") : 
+                        st.session_state.clicked = True
+                    if st.session_state.clicked:
+                        placeholder.empty()
+                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                    
+        elif choice == 'Planning' :
+            with placeholder.container():
+                st.title(f"Planning 🕐")
+                bookdata = get_status_planning(self.session_state.current_user)
+                book_clean_df = pd.DataFrame(bookdata, columns=["Cover", "Title", "Status","isbn13"])
+                columns = st.columns((1, 3, 6, 2,1))
+                fields =["Rank","Cover", "Title", "Status"]
+                for col, field_name in zip(columns, fields):
+                    col.write(field_name)
+                for i in book_clean_df.index :
+                    col1, col2, col3,col4,col5 = st.columns((1, 3, 6, 2,1))
+                    col1.write(str(i+1))
+                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    col3.write(book_clean_df["Title"][i])
+                    col4.write(str(book_clean_df["Status"][i]))
+                    if col5.button("Edit") : 
+                        st.session_state.clicked = True
+                    if st.session_state.clicked:
+                        placeholder.empty()
+                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
+        else :
+            st.title(f"Welcome to your Personal Library 📚 {self.session_state.current_user}");
+        #print(html)
