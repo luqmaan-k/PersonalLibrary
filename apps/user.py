@@ -8,6 +8,24 @@ from PIL import Image
 import pandas as pd
 import csv
 
+def get_browse():
+    database = "library.db"
+
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+     
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT i.Image_L,b.title,b.average_rating,b.num_pages,b.isbn13 FROM books b inner join imagedata i on b.isbn13 = i.isbn13 ORDER BY b.average_rating DESC LIMIT 100;")
+        book_data = cursor.fetchall()
+        conn.close()
+        return book_data
+        # Close the connection
+        
+    else:
+        print("Error! Cannot create the database connection.")
+        return None
+
 def get_book_details(isbn13):
     database = "library.db"
 
@@ -325,12 +343,38 @@ class UserApp(HydraHeadApp):
                         editbookstatus(book_clean_df["isbn13"][i],placeholder)
                     unique_key +=1
         elif choice == 'Insert' :
-            with st.form(key = 'InserForm',clear_on_submit = True):
-                insertform = {}
-                isbn13 = st.number_input("Enter isbn13 number to insert",min_value = 0,max_value = 9999999999999,value = None,placeholder = 'XXXXXXXXXXXXX')
-                status = st.selectbox('Status',('Reading','Completed','Planning'))
-                insertform['Submitted'] = st.form_submit_button('Insert')
-                if insertform['Submitted']:
-                    insert_book(insertform,isbn13,status)
-                    print("Inserted")
+            st.title(f"Browse 🔎")
+            book_clean_df = pd.DataFrame(get_browse(),columns = ["Cover","Title","Rating","NumPages","isbn13"])
+            print(book_clean_df)
+            
+            # with placeholder():
+            columns = st.columns((1,2, 6, 1, 1,1))
+            fields = ["Rank","Cover","Title","Rating","NumPages","Insert"]
+            for col, field_name in zip(columns, fields):
+                col.write(field_name)
+            print("Working")
+            for i in book_clean_df.index :
+                col1, col2, col3,col4,col5,col6 = st.columns((1,2, 6, 1, 1,1))
+                col1.write(str(i+1))
+                col2.image(book_clean_df["Cover"][i],width = 150)
+                col3.subheader(book_clean_df["Title"][i])
+                col4.subheader(str(book_clean_df["Rating"][i]))
+                col5.subheader(str(book_clean_df["NumPages"][i]))
+                userisbns = [item[1] for item in get_status(self.session_state.current_user)]
+                if book_clean_df["isbn13"][i] in userisbns: 
+                    insert_f = False 
+                    col6.subheader("In Library")
+                else :
+                    insert_f = col6.checkbox("Insert",key = str(unique_key) )
+                unique_key+=1
+                if insert_f :
+                    placeholder.empty()
+                    with st.form(key = 'InserForm',clear_on_submit = True):
+                        insertform = {}
+                        isbn13 = book_clean_df["isbn13"][i]
+                        status = st.selectbox('Status',('Reading','Completed','Planning'))
+                        insertform['Submitted'] = st.form_submit_button('Insert')
+                        if insertform['Submitted']:
+                            insert_book(insertform,isbn13,status)
+                            print("Inserted")
         #print(html)
