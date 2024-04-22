@@ -52,7 +52,7 @@ def get_status_all(username):
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT i.Image_L,b.title,s.status,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}');")
+        cursor.execute(f"SELECT i.Image_L,b.title,s.status,b.isbn13 FROM status s LEFT OUTER join books b on s.isbn13 = b.isbn13 LEFT OUTER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}');")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
@@ -70,7 +70,7 @@ def get_status_completed(username):
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT i.Image_L,b.title,s.rating,s.notes,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}') and s.status = 'C';")
+        cursor.execute(f"SELECT i.Image_L,b.title,s.rating,s.notes,b.isbn13 FROM status s LEFT OUTER join books b on s.isbn13 = b.isbn13 LEFT OUTER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}') and s.status = 'C';")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
@@ -88,7 +88,7 @@ def get_status_reading(username):
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT i.Image_L,b.title,s.current_page || ' / ' || b.num_pages,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}' and s.status = 'R');")
+        cursor.execute(f"SELECT i.Image_L,b.title,s.current_page || ' / ' || b.num_pages,b.isbn13 FROM status s LEFT OUTER join books b on s.isbn13 = b.isbn13 LEFT OUTER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}' and s.status = 'R');")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
@@ -106,7 +106,7 @@ def get_status_planning(username):
      
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT i.Image_L,b.title,s.notes,b.isbn13 FROM status s INNER join books b on s.isbn13 = b.isbn13 INNER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}' and s.status = 'P');")
+        cursor.execute(f"SELECT i.Image_L,b.title,s.notes,b.isbn13 FROM status s LEFT OUTER join books b on s.isbn13 = b.isbn13 LEFT OUTER JOIN imagedata i on i.isbn13 = s.isbn13 where user_id = (select user_id from user where username = '{username}' and s.status = 'P');")
         book_data = cursor.fetchall()
         conn.close()
         return book_data
@@ -115,31 +115,90 @@ def get_status_planning(username):
     else:
         print("Error! Cannot create the database connection.")
         return None
+def insert_book(insertform,isbn13,status):
+    database = "library.db"
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+    newstatus = 'R'
+    if(status == 'Reading'):
+        newstatus = 'R'
+    elif(status == 'Completed'):
+        newstatus = 'C'
+    elif(status == 'Planning'):
+        newstatus = 'P'
+    if conn is not None:
+        cursor = conn.cursor()
+        #print(f"INSERT INTO status(user_id,isbn13,status,current_page,rating,notes) VALUES((SELECT user_id from user where username = '{st.session_state.current_user}'),{isbn13},'{newstatus}',NULL,NULL,NULL);")
+        cursor.execute(f"INSERT INTO status(user_id,isbn13,status,current_page,rating,notes) VALUES((SELECT user_id from user where username = '{st.session_state.current_user}'),{isbn13},'{newstatus}',NULL,NULL,NULL);")
+        conn.commit()
+        print("Deleted !")
+        conn.close()
+    # Close the connection
+        
+    else:
+        print("Error! Cannot create the database connection.")
+        return None
 
 def update_status(newform,isbn13):
-    print("New Form : ",newform)
-    st.session_state.formstate = False
-    st.session_state.clicked = False
+    print("Form Gonna get updated : ",newform)
+    database = "library.db"
+    # Create a connection to the database
+    conn = sql.connect("library.db",check_same_thread=False)
+    if newform['delete']:
+        if conn is not None:
+            cursor = conn.cursor()
+            cursor.execute(f"DELETE FROM status WHERE isbn13 = {isbn13} and user_id = (SELECT user_id from user where username = '{st.session_state.current_user}');")
+            conn.commit()
+            print("Deleted !")
+            conn.close()
+            # Close the connection
+            
+        else:
+            print("Error! Cannot create the database connection.")
+            return None
 
-def editbookstatus(isbn13,placeholder):
-    book_details = get_book_details(isbn13)
-    with placeholder.container():
-        column1,column2 = st.columns((1,5))
-        column1.image(book_details[0][6],width = 200)
-        column2.header("Name : " + book_details[0][2] )
-        column2.subheader("Authored by : " + book_details[0][7])
-        column2.subheader("Published by : " + book_details[0][8])
-        column2.subheader("Rating : " + str(book_details[0][1]))
-        edit = st.form(key = "edit")
-        formstate = {}
-        formstate['status'] = edit.selectbox('Something?',('Reading','Completed','Planning'))
-        formstate['current_page'] = edit.slider('Number Of Pages Read',0,book_details[0][3],1) 
-        formstate['rating'] = edit.slider("Rating",0,10,1)
-        formstate['notes'] = edit.text_input("Notes")
-        if edit.form_submit_button('Update') :
-            st.session_state.formbutton = True
-        if st.session_state.formbutton : 
-            update_status(formstate,isbn13)
+    else:
+        newstatus = 'R'
+        if(newform['status'] == 'Reading'):
+            newstatus = 'R'
+        elif(newform['status'] == 'Completed'):
+            newstatus = 'C'
+        elif(newform['status'] == 'Planning'):
+            newstatus = 'P'
+            
+        if conn is not None:
+            cursor = conn.cursor()
+            cursor.execute(f"UPDATE status SET status = '{newstatus}' , current_page = {newform['current_page']} ,rating = {newform['rating']},notes = '{newform['notes']}' WHERE isbn13 = {isbn13} and user_id = (SELECT user_id from user where username = '{st.session_state.current_user}');")
+            conn.commit()
+            print("Updated !")
+            conn.close()
+            # Close the connection
+            
+        else:
+            print("Error! Cannot create the database connection.")
+            return None
+
+def editbookstatus(isbn13,placeholder,render = 1):
+    if render:
+        book_details = get_book_details(isbn13)
+        with placeholder.container():
+            column1,column2 = st.columns((1,5))
+            if not book_details[0][6] == None :
+                column1.image(book_details[0][6],width = 200)
+            column2.header("Name : " + book_details[0][2] )
+            column2.subheader("Authored by : " + book_details[0][7])
+            column2.subheader("Published by : " + book_details[0][8])
+            column2.subheader("Rating : " + str(book_details[0][1]))
+            with st.form(key = 'Edit',clear_on_submit = True):
+                formstate = {}
+                formstate['status'] = st.selectbox('Status',('Reading','Completed','Planning'))
+                formstate['current_page'] = st.slider('Number Of Pages Read',0,book_details[0][3],1) 
+                formstate['rating'] = st.slider("Rating",0,10,1)
+                formstate['notes'] = st.text_input("Notes")
+                formstate['delete'] = st.checkbox("🗑 Delete",key = 'Delete')
+                formstate['Submitted'] = st.form_submit_button('Update')
+                if formstate['Submitted']:
+                    update_status(formstate,isbn13)
 
 @st.cache_data
 def convert_df(input_df):
@@ -156,15 +215,17 @@ class UserApp(HydraHeadApp):
         """
         Application entry point.
         """
+        unique_key = 0
         
         if 'clicked' not in st.session_state :
             st.session_state.clicked = False
         if 'formbutton' not in st.session_state :
             st.session_state.formbutton = False
 
-        menu = ["All", "Reading","Completed","Planning"]
+        menu = ["All", "Reading","Completed","Planning","Insert"]
         choice = st.sidebar.selectbox("Menu", menu)
         placeholder = st.empty()
+        enabled = None
         if choice == 'All' :
             with placeholder.container():
                 st.title(f"Welcome to your Personal Library 📚 {self.session_state.current_user}")
@@ -177,15 +238,18 @@ class UserApp(HydraHeadApp):
                 for i in book_clean_df.index :
                     col1, col2, col3,col4,col5 = st.columns((1, 3, 6, 2,1))
                     col1.write(str(i+1))
-                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    if not book_clean_df["Cover"][i] == None:
+                        col2.image(book_clean_df["Cover"][i],width = 200)
                     col3.write(book_clean_df["Title"][i])
                     col4.write(str(book_clean_df["Status"][i]))
-                    if col5.button("Edit") : 
-                        st.session_state.clicked = True
-                    if st.session_state.clicked:
-                        placeholder.empty()
-                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
-                        
+                    if (enabled == None) or (enabled == i):
+                        render = col5.checkbox("Edit",key = str(unique_key),disabled = False)
+                    else :
+                        render = col5.checkbox("Edit",key = str(unique_key),disabled = True)
+                    if render :
+                        enabled = i
+                        editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                    unique_key +=1
             
         elif choice == 'Reading' :
             with placeholder.container():
@@ -199,15 +263,18 @@ class UserApp(HydraHeadApp):
                 for i in book_clean_df.index :
                     col1, col2, col3,col4,col5 = st.columns((1, 3, 6, 2,1))
                     col1.write(str(i+1))
-                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    if not book_clean_df["Cover"][i] == None:
+                        col2.image(book_clean_df["Cover"][i],width = 200)
                     col3.write(book_clean_df["Title"][i])
                     col4.write(str(book_clean_df["Current Page"][i]))
-                    if col5.button("Edit") : 
-                        st.session_state.clicked = True
-                    if st.session_state.clicked:
-                        placeholder.empty()
-                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
-                    
+                    if (enabled == None) or (enabled == i):
+                        render = col5.checkbox("Edit",key = str(unique_key),disabled = False)
+                    else :
+                        render = col5.checkbox("Edit",key = str(unique_key),disabled = True)
+                    if render :
+                        enabled = i
+                        editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                    unique_key +=1
         elif choice == 'Completed' :
             with placeholder.container():
                 st.title(f"Completed ✔")
@@ -220,16 +287,19 @@ class UserApp(HydraHeadApp):
                 for i in book_clean_df.index :
                     col1, col2, col3,col4,col5,col6 = st.columns((1, 3, 3, 2, 4, 1))
                     col1.write(str(i+1))
-                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    if not book_clean_df["Cover"][i] == None:
+                        col2.image(book_clean_df["Cover"][i],width = 200)
                     col3.write(book_clean_df["Title"][i])
                     col4.write(str(book_clean_df["Rating"][i]))
                     col5.write(book_clean_df["Note"][i])
-                    if col6.button("Edit") : 
-                        st.session_state.clicked = True
-                    if st.session_state.clicked:
-                        placeholder.empty()
-                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
-                    
+                    if (enabled == None) or (enabled == i):
+                        render = col6.checkbox("Edit",key = str(unique_key),disabled = False)
+                    else :
+                        render = col6.checkbox("Edit",key = str(unique_key),disabled = True)
+                    if render :
+                        enabled = i
+                        editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                    unique_key +=1
         elif choice == 'Planning' :
             with placeholder.container():
                 st.title(f"Planning 🕐")
@@ -242,14 +312,25 @@ class UserApp(HydraHeadApp):
                 for i in book_clean_df.index :
                     col1, col2, col3,col4,col5 = st.columns((1, 3, 6, 2,1))
                     col1.write(str(i+1))
-                    col2.image(book_clean_df["Cover"][i],width = 200)
+                    if not book_clean_df["Cover"][i] == None:
+                        col2.image(book_clean_df["Cover"][i],width = 200)
                     col3.write(book_clean_df["Title"][i])
                     col4.write(str(book_clean_df["Status"][i]))
-                    if col5.button("Edit") : 
-                        st.session_state.clicked = True
-                    if st.session_state.clicked:
-                        placeholder.empty()
-                        newstatus = editbookstatus(book_clean_df["isbn13"][i],placeholder)
-        else :
-            st.title(f"Welcome to your Personal Library 📚 {self.session_state.current_user}");
+                    if (enabled == None) or (enabled == i):
+                        render = col5.checkbox("Edit",key = str(unique_key),disabled = False)
+                    else :
+                        render = col5.checkbox("Edit",key = str(unique_key),disabled = True)
+                    if render :
+                        enabled = i
+                        editbookstatus(book_clean_df["isbn13"][i],placeholder)
+                    unique_key +=1
+        elif choice == 'Insert' :
+            with st.form(key = 'InserForm',clear_on_submit = True):
+                insertform = {}
+                isbn13 = st.number_input("Enter isbn13 number to insert",min_value = 0,max_value = 9999999999999,value = None,placeholder = 'XXXXXXXXXXXXX')
+                status = st.selectbox('Status',('Reading','Completed','Planning'))
+                insertform['Submitted'] = st.form_submit_button('Insert')
+                if insertform['Submitted']:
+                    insert_book(insertform,isbn13,status)
+                    print("Inserted")
         #print(html)

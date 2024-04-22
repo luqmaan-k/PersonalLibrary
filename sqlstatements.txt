@@ -88,3 +88,53 @@ create table imagedata(
 
 INSERT OR IGNORE INTO imagedata
 select bd.isbn13,"Image-URL-L","Image-URL-M","Image-URL-S" from bookswithimage bi inner join booksdata bd on bi.isbn = bd.isbn;
+
+CREATE TABLE IF NOT EXISTS status_log (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation TEXT,
+    timestamp TEXT,
+    user_id INTEGER,
+    isbn13 REAL,
+    current_page INTEGER,
+    rating INTEGER,
+    notes TEXT
+);
+
+DROP TRIGGER status_insert_trigger;
+DROP TRIGGER status_update_trigger;
+DROP TRIGGER status_delete_trigger;
+CREATE TRIGGER IF NOT EXISTS status_insert_trigger
+AFTER INSERT ON status
+FOR EACH ROW
+BEGIN
+    INSERT INTO status_log (operation, timestamp, user_id, isbn13, current_page, rating, notes)
+    VALUES ('INSERT', datetime('now'), NEW.user_id, NEW.isbn13, NEW.current_page, NEW.rating, NEW.notes);
+END;
+
+CREATE TRIGGER IF NOT EXISTS status_update_trigger
+AFTER UPDATE ON status
+FOR EACH ROW
+BEGIN
+    INSERT INTO status_log (operation, timestamp, user_id, isbn13, current_page, rating, notes)
+    VALUES ('UPDATE', datetime('now'), NEW.user_id, NEW.isbn13, NEW.current_page, NEW.rating, NEW.notes);
+END;
+
+CREATE TRIGGER IF NOT EXISTS status_delete_trigger
+AFTER DELETE ON status
+FOR EACH ROW
+BEGIN
+    INSERT INTO status_log (operation, timestamp, user_id, isbn13, current_page, rating, notes)
+    VALUES ('DELETE', datetime('now'), OLD.user_id, OLD.isbn13, OLD.current_page, OLD.rating, OLD.notes);
+END;
+
+CREATE TRIGGER IF NOT EXISTS prevent_same_username_password
+BEFORE INSERT ON user
+FOR EACH ROW
+BEGIN
+    SELECT CASE
+        WHEN NEW.username = NEW.password THEN
+            RAISE(ABORT, 'Username and password cannot be the same.')
+        ELSE
+            NULL
+    END;
+END;
