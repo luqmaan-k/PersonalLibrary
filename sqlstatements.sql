@@ -138,3 +138,126 @@ BEGIN
             NULL
     END;
 END;
+
+DELIMITER //
+
+CREATE PROCEDURE InsertStatus(
+    IN current_user_name VARCHAR(255),
+    IN isbn_13 VARCHAR(255),
+    IN new_status VARCHAR(255)
+)
+BEGIN
+    DECLARE user_id_val INT;
+
+    -- Get the user_id based on the provided username
+    SELECT user_id INTO user_id_val FROM user WHERE username = current_user_name;
+
+    -- Insert the status record
+    INSERT INTO status(user_id, isbn13, status, current_page, rating, notes)
+    VALUES(user_id_val, isbn_13, new_status, NULL, NULL, NULL);
+
+END //
+
+DELIMITER ;
+
+CALL InsertStatus('{st.session_state.current_user}', '{isbn13}', '{newstatus}');
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateStatus(
+    IN current_user_name VARCHAR(255),
+    IN isbn_13 VARCHAR(255),
+    IN new_status VARCHAR(255),
+    IN new_current_page INT,
+    IN new_rating INT,
+    IN new_notes VARCHAR(255)
+)
+BEGIN
+    DECLARE user_id_val INT;
+
+    -- Get the user_id based on the provided username
+    SELECT user_id INTO user_id_val FROM user WHERE username = current_user_name;
+
+    -- Update the status record
+    UPDATE status
+    SET status = new_status,
+        current_page = new_current_page,
+        rating = new_rating,
+        notes = new_notes
+    WHERE isbn13 = isbn_13 AND user_id = user_id_val;
+
+END //
+
+DELIMITER ;
+
+CALL UpdateStatus('{st.session_state.current_user}', '{isbn13}', '{newstatus}', {newform['current_page']}, {newform['rating']}, '{newform['notes']}');
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteStatus(
+    IN current_user_name VARCHAR(255),
+    IN isbn_13 VARCHAR(255)
+)
+BEGIN
+    DECLARE user_id_val INT;
+
+    -- Get the user_id based on the provided username
+    SELECT user_id INTO user_id_val FROM user WHERE username = current_user_name;
+
+    -- Delete the status record
+    DELETE FROM status
+    WHERE isbn13 = isbn_13 AND user_id = user_id_val;
+
+END //
+
+DELIMITER ;
+
+CALL DeleteStatus('{st.session_state.current_user}', '{isbn13}');
+
+DELIMITER //
+
+CREATE FUNCTION GetTopRatedBooks()
+RETURNS INT
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE image_url VARCHAR(255);
+    DECLARE book_title VARCHAR(255);
+    DECLARE avg_rating FLOAT;
+    DECLARE num_pages INT;
+    DECLARE isbn_13 VARCHAR(255);
+    
+    -- Create a temporary table to store the result
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_top_rated_books (
+        Image_L VARCHAR(255),
+        title VARCHAR(255),
+        average_rating FLOAT,
+        num_pages INT,
+        isbn13 VARCHAR(255)
+    );
+
+    DECLARE cursor_finished CURSOR FOR
+        SELECT i.Image_L, b.title, b.average_rating, b.num_pages, b.isbn13
+        FROM books b
+        INNER JOIN imagedata i ON b.isbn13 = i.isbn13
+        ORDER BY b.average_rating DESC;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cursor_finished;
+
+    read_loop: LOOP
+        FETCH cursor_finished INTO image_url, book_title, avg_rating, num_pages, isbn_13;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        -- Insert the fetched data into the temporary table
+        INSERT INTO temp_top_rated_books (Image_L, title, average_rating, num_pages, isbn13)
+        VALUES (image_url, book_title, avg_rating, num_pages, isbn_13);
+    END LOOP;
+
+    CLOSE cursor_finished;
+
+    -- Return the number of rows inserted into the temporary table
+    RETURN (SELECT COUNT(*) FROM temp_top_rated_books LIMIT 100);
+END //
+
+DELIMITER ;

@@ -152,3 +152,4 @@ cython_debug/
 #.idea/
 library.db
 books.csv
+.streamlit
