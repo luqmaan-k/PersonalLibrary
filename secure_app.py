@@ -15,13 +15,11 @@ if __name__ == '__main__':
     hide_st = True
 
     over_theme = {'txc_inactive': '#FFFFFF'}
-    #this is the host application, we add children to it and that's it!
+    
     app = HydraApp(
         title='Personal Library',
         favicon="📚",
         hide_streamlit_markers=hide_st,
-        #add a nice banner, this banner has been defined as 5 sections with spacing defined by the banner_spacing array below.
-        #use_banner_images=["./online-library.png",None,{'header':"<h1 style='text-align:center;padding: 0px 0px;color:grey;font-size:200%;'>Personal Library</h1><br>"},None,"./resources/lock.png"], 
         banner_spacing=[5,30,60,30,5],
         use_navbar=hydralit_navbar, 
         navbar_sticky=sticky_navbar,

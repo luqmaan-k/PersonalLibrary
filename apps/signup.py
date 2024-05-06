@@ -51,9 +51,6 @@ class SignUpApp(HydraHeadApp):
         st.markdown("<h1 style='text-align: center;'>Signup</h1>", unsafe_allow_html=True)
 
         c1,c2,c3 = st.columns([2,2,2])
-        # c3.image("./resources/lock.png",width=100,)
-        # c3.image("./resources/hydra.png",width=100,)
-
         pretty_btn = """
         <style>
         div[class="row-widget stButton"] > button {
@@ -124,10 +121,5 @@ class SignUpApp(HydraHeadApp):
                     st.error("User Name not allowed or already taken.Please try again")
     def _save_signup(self, signup_data):
         #get the user details from the form and save somehwere
-
-        #signup_data
-        # this is the data submitted
-
-        #just show the data we captured
         return set_user(signup_data['username'],signup_data['password'])
 

@@ -74,7 +74,7 @@ class LoginApp(HydraHeadApp):
         form_state['access_level'] = 2
         form_state['submitted'] = login_form.form_submit_button('Login')
 
-        parent_container.write("sample login -> joe & joe")
+        parent_container.write("sample login -> default & user")
 
         if parent_container.button('Guest Login',key='guestbtn'):
             # set access level to a negative number to allow a kick to the unsecure_app set in the parent

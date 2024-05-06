@@ -218,11 +218,6 @@ def editbookstatus(isbn13,placeholder,render = 1):
                 if formstate['Submitted']:
                     update_status(formstate,isbn13)
 
-@st.cache_data
-def convert_df(input_df):
-     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-     return input_df.to_html(escape=False, formatters=dict(Cover=path_to_image_html))
-
 class UserApp(HydraHeadApp):
 
     def __init__(self, title = '', **kwargs):
@@ -377,4 +372,3 @@ class UserApp(HydraHeadApp):
                         if insertform['Submitted']:
                             insert_book(insertform,isbn13,status)
                             print("Inserted")
-        #print(html)
