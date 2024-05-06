@@ -146,10 +146,8 @@ def insert_book(insertform,isbn13,status):
         newstatus = 'P'
     if conn is not None:
         cursor = conn.cursor()
-        #print(f"INSERT INTO status(user_id,isbn13,status,current_page,rating,notes) VALUES((SELECT user_id from user where username = '{st.session_state.current_user}'),{isbn13},'{newstatus}',NULL,NULL,NULL);")
         cursor.execute(f"INSERT INTO status(user_id,isbn13,status,current_page,rating,notes) VALUES((SELECT user_id from user where username = '{st.session_state.current_user}'),{isbn13},'{newstatus}',NULL,NULL,NULL);")
         conn.commit()
-        print("Deleted !")
         conn.close()
     # Close the connection
         
@@ -158,7 +156,6 @@ def insert_book(insertform,isbn13,status):
         return None
 
 def update_status(newform,isbn13):
-    print("Form Gonna get updated : ",newform)
     database = "library.db"
     # Create a connection to the database
     conn = sql.connect("library.db",check_same_thread=False)
@@ -167,7 +164,6 @@ def update_status(newform,isbn13):
             cursor = conn.cursor()
             cursor.execute(f"DELETE FROM status WHERE isbn13 = {isbn13} and user_id = (SELECT user_id from user where username = '{st.session_state.current_user}');")
             conn.commit()
-            print("Deleted !")
             conn.close()
             # Close the connection
             
@@ -188,7 +184,6 @@ def update_status(newform,isbn13):
             cursor = conn.cursor()
             cursor.execute(f"UPDATE status SET status = '{newstatus}' , current_page = {newform['current_page']} ,rating = {newform['rating']},notes = '{newform['notes']}' WHERE isbn13 = {isbn13} and user_id = (SELECT user_id from user where username = '{st.session_state.current_user}');")
             conn.commit()
-            print("Updated !")
             conn.close()
             # Close the connection
             
@@ -340,14 +335,12 @@ class UserApp(HydraHeadApp):
         elif choice == 'Insert' :
             st.title(f"Browse 🔎")
             book_clean_df = pd.DataFrame(get_browse(),columns = ["Cover","Title","Rating","NumPages","isbn13"])
-            print(book_clean_df)
             
             # with placeholder():
             columns = st.columns((1,2, 6, 1, 1,1))
             fields = ["Rank","Cover","Title","Rating","NumPages","Insert"]
             for col, field_name in zip(columns, fields):
                 col.write(field_name)
-            print("Working")
             for i in book_clean_df.index :
                 col1, col2, col3,col4,col5,col6 = st.columns((1,2, 6, 1, 1,1))
                 col1.write(str(i+1))
@@ -371,4 +364,3 @@ class UserApp(HydraHeadApp):
                         insertform['Submitted'] = st.form_submit_button('Insert')
                         if insertform['Submitted']:
                             insert_book(insertform,isbn13,status)
-                            print("Inserted")
